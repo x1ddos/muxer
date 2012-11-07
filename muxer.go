@@ -1,13 +1,37 @@
-// Simple muxer without regexp
+// Simple muxer without regexp.
+// Usage example:
+// 
+//	package myapp
 //
+//	import (
+//		"net/http"
+//		muxer "code.google.com/p/go-muxer"
+//	)
+//
+//	func handler1(w http.ResponseWriter, r *http.Request, v url.Values) {
+//		// v will be populated with params from URL path, if any.
+//		// v.Get("id")
+//		// v.Get("action")
+//	}
+//
+//	func init() {
+//		m := muxer.NewMux("/api", nil)
+//		m.Add("GET", "users/{id}", handler1).As("profile")
+//		m.Add("GET", "products", handler2)
+//		m.Add("PUT", "products/{id}/do", handler3)
+//		m.Add("POST", "{domain}/{action}/{id}", handler4).As("whatever")
+//	}
+//	
+// See muxer_test.go for more.
+
 package muxer
 
 import (
 	"fmt"
-	"path"
-	"strings"
 	"net/http"
 	"net/url"
+	"path"
+	"strings"
 )
 
 type Mux interface {
@@ -34,19 +58,19 @@ func NewMux(basePath string, httpMux *http.ServeMux) (m Mux) {
 		httpMux = http.DefaultServeMux
 	}
 	m = &defaultMux{
-		base: basePath,
+		base:    basePath,
 		baseLen: len(basePath),
-		routes: make([]*Route, 0),
+		routes:  make([]*Route, 0),
 	}
 	httpMux.Handle(basePath, m)
-	return 
+	return
 }
 
 // Default implementation of Mux interface
 type defaultMux struct {
-	base string
+	base    string
 	baseLen int
-	routes []*Route
+	routes  []*Route
 }
 
 // Returns base path of this mux.
@@ -70,11 +94,11 @@ func (dm *defaultMux) Add(m string, p string, h HandlerFunc) *Route {
 		}
 	}
 	route := &Route{
-		Method: m,
+		Method:  m,
 		Pattern: p,
 		Handler: h,
-		mux: dm,
-		parts: makeParts(p),
+		mux:     dm,
+		parts:   makeParts(p),
 	}
 	route.partsLen = len(route.parts)
 	dm.routes = append(dm.routes, route)
@@ -95,7 +119,7 @@ func (dm *defaultMux) BuildPath(name string, params ...interface{}) string {
 		panic("Route doesn't exist")
 	}
 
-	parts := make([]string, 1, route.partsLen + 1)
+	parts := make([]string, 1, route.partsLen+1)
 	parts[0] = dm.base
 	pi := 0
 	for _, rp := range route.parts {
@@ -155,13 +179,13 @@ type HandlerFunc func(w http.ResponseWriter, r *http.Request, v url.Values)
 
 // Single route struct, element for a mux.Routes()
 type Route struct {
-	Method string
+	Method  string
 	Pattern string
 	Handler HandlerFunc
-	Name string
+	Name    string
 	// Internal
-	mux Mux
-	parts []*pathPart
+	mux      Mux
+	parts    []*pathPart
 	partsLen int
 }
 
@@ -179,7 +203,7 @@ func (r *Route) As(name string) *Route {
 
 type pathPart struct {
 	isVar bool
-	name string
+	name  string
 }
 
 func makeParts(pattern string) []*pathPart {
@@ -188,7 +212,7 @@ func makeParts(pattern string) []*pathPart {
 	for _, sp := range split {
 		part := &pathPart{isVar: sp[0] == '{' && sp[len(sp)-1] == '}'}
 		if part.isVar {
-			part.name = sp[1:len(sp)-1]
+			part.name = sp[1 : len(sp)-1]
 		} else {
 			part.name = sp
 		}

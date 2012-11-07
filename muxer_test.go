@@ -4,12 +4,12 @@
 package muxer
 
 import (
-	"strings"
 	"fmt"
-	"testing"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"strings"
+	"testing"
 )
 
 var dummy = func(w http.ResponseWriter, r *http.Request, v url.Values) {
@@ -40,10 +40,10 @@ func TestAddRoute(t *testing.T) {
 	assertEqual(t, r2.Method, "PUT")
 	assertEqual(t, r2.Pattern, "scores/{id}")
 
-	defer func() { 
-		if err := recover(); err == nil { 
-            t.Fatalf("Expected panic, got no error instead")
-        } 
+	defer func() {
+		if err := recover(); err == nil {
+			t.Fatalf("Expected panic, got no error instead")
+		}
 	}()
 	// should panic because of the same method + pattern
 	m2.Add("PUT", "/scores/{id}", dummy)
@@ -59,10 +59,10 @@ func TestNamedRoute(t *testing.T) {
 		t.Fatalf("Expected 2 routes in the slice, got %d", routesLen)
 	}
 
-	defer func() { 
-		if err := recover(); err == nil { 
-            t.Fatalf("Expected panic, got no error instead")
-        } 
+	defer func() {
+		if err := recover(); err == nil {
+			t.Fatalf("Expected panic, got no error instead")
+		}
 	}()
 	// should panic because of the same route name
 	m.Add("PUT", "users/{id}", dummy).As("profile")
@@ -71,7 +71,7 @@ func TestNamedRoute(t *testing.T) {
 func TestServeHttp(t *testing.T) {
 	h := http.NewServeMux()
 	NewMux("/api", h).Add("GET", "users/{action}/{id}", dummy)
-	
+
 	// Test 200 OK
 	req, err := http.NewRequest("GET", "/api/users/show/alex", nil)
 	if err != nil {
@@ -144,7 +144,7 @@ func buildMuxForBench(sm *http.ServeMux) (m Mux) {
 		sm = http.NewServeMux()
 	}
 	m = NewMux("/api", sm)
-    m.Add("GET", "users/{id}", dummy).As("profile")
+	m.Add("GET", "users/{id}", dummy).As("profile")
 	m.Add("GET", "products", dummy).As("list")
 	m.Add("PUT", "products/{id}/do", dummy).As("product")
 	m.Add("GET", "{domain}/{action}/{id}", dummy)
@@ -153,12 +153,12 @@ func buildMuxForBench(sm *http.ServeMux) (m Mux) {
 }
 
 func BenchmarkRouteMatch(b *testing.B) {
-    b.StopTimer()
-    m := buildMuxForBench(nil).(*defaultMux)
-    b.StartTimer()
-    for i := 0; i < b.N; i++ {
-        m.match("PUT", "/api/products/321/do")
-    }
+	b.StopTimer()
+	m := buildMuxForBench(nil).(*defaultMux)
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		m.match("PUT", "/api/products/321/do")
+	}
 }
 
 func BenchmarkServe200(b *testing.B) {
@@ -170,13 +170,13 @@ func BenchmarkServe200(b *testing.B) {
 		panic(err)
 	}
 	b.StartTimer()
-    for i := 0; i < b.N; i++ {
-    	w := httptest.NewRecorder()
-    	h.ServeHTTP(w, req)
-    	if w.Code != 200 {
-    		panic(fmt.Sprintf("Expected 200 OK, got %d", w.Code))
-    	}
-    }
+	for i := 0; i < b.N; i++ {
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, req)
+		if w.Code != 200 {
+			panic(fmt.Sprintf("Expected 200 OK, got %d", w.Code))
+		}
+	}
 }
 
 func BenchmarkServe404(b *testing.B) {
@@ -188,20 +188,20 @@ func BenchmarkServe404(b *testing.B) {
 		panic(err)
 	}
 	b.StartTimer()
-    for i := 0; i < b.N; i++ {
-    	w := httptest.NewRecorder()
-    	h.ServeHTTP(w, req)
-    	if w.Code != 404 {
-    		panic(fmt.Sprintf("Expected 404, got %d", w.Code))
-    	}
-    }
+	for i := 0; i < b.N; i++ {
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, req)
+		if w.Code != 404 {
+			panic(fmt.Sprintf("Expected 404, got %d", w.Code))
+		}
+	}
 }
 
 func BenchmarkRouteBuild(b *testing.B) {
-    b.StopTimer()
-    m := buildMuxForBench(nil)
-    b.StartTimer()
-    for i := 0; i < b.N; i++ {
-        m.BuildPath("whatever", "somedomain", true, 23.45)
-    }
+	b.StopTimer()
+	m := buildMuxForBench(nil)
+	b.StartTimer()
+	for i := 0; i < b.N; i++ {
+		m.BuildPath("whatever", "somedomain", true, 23.45)
+	}
 }
