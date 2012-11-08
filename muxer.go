@@ -15,12 +15,15 @@ Usage example:
 		// v.Get("action")
 	}
 
+	var m = muxer.NewMux("/api", nil)
+
 	func init() {
-		m := muxer.NewMux("/api", nil)
 		m.Add("GET", "users/{id}", handler1).As("profile")
 		m.Add("GET", "products", handler2)
 		m.Add("PUT", "products/{id}/do", handler3)
 		m.Add("POST", "{domain}/{action}/{id}", handler4).As("whatever")
+		// Enable CORS support (optional)
+		m.SetCORS("*", "true", "")
 	}
 
 See muxer_test.go for more.
@@ -35,12 +38,28 @@ import (
 	"strings"
 )
 
+const (
+	CORS_ALLOW_ORIGIN      = "Access-Control-Allow-Origin"
+	CORS_ALLOW_CREDENTIALS = "Access-Control-Allow-Credentials"
+	CORS_EXPOSE_HEADERS    = "Access-Control-Expose-Headers"
+)
+
 type Mux interface {
+	// Returns the base path of this muxer.
+	// Useful for an API manifest generation.
 	BasePath() string
+	// Returns the slice of all routes that's been added to this muxer.
 	Routes() []*Route
+	// Adds a new route to this muxer.
 	Add(method string, pattern string, h HandlerFunc) *Route
+	// Reconstructs a URL path from an existing route (previously added).
+	// The route should have a name.
 	BuildPath(routeName string, params ...interface{}) string
+	// http's package interface method that serves HTTP requests.
 	ServeHTTP(w http.ResponseWriter, req *http.Request)
+	// CORS support.
+	// Example: mux.SetCORS("*", "true", "")
+	SetCORS(origin, credentials, headers string)
 }
 
 // NewMux creates a new muxer and hooks it up with provided http.ServeMux.
@@ -72,6 +91,17 @@ type defaultMux struct {
 	base    string
 	baseLen int
 	routes  []*Route
+	// CORS support
+	origin      string
+	credentials string
+	headers     string
+}
+
+// CORS support
+func (dm *defaultMux) SetCORS(origin, credentials, headers string) {
+	dm.origin = origin
+	dm.credentials = credentials
+	dm.headers = headers
 }
 
 // Returns base path of this mux.
@@ -141,6 +171,13 @@ func (m *defaultMux) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	if h == nil {
 		http.NotFound(w, req)
 		return
+	}
+	if m.origin != "" {
+		w.Header().Set(CORS_ALLOW_ORIGIN, m.origin)
+		w.Header().Set(CORS_ALLOW_CREDENTIALS, m.credentials)
+		if m.headers != "" {
+			w.Header().Set(CORS_EXPOSE_HEADERS, m.headers)
+		}
 	}
 	h(w, req, v)
 }

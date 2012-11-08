@@ -102,6 +102,36 @@ func TestServeHttp(t *testing.T) {
 	}
 }
 
+func TestCORS(t *testing.T) {
+	h := http.NewServeMux()
+	m := NewMux("/api", h)
+	m.Add("GET", "path", dummy)
+	m.SetCORS("*", "true", "")
+
+	req, err := http.NewRequest("GET", "/api/path", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	if w.Code != 200 {
+		t.Fatalf("Expected 200 OK; got %d\n%s", w.Code, w.Body.String())
+	}
+	assertEqual(t, w.HeaderMap.Get(CORS_ALLOW_ORIGIN), "*")
+	assertEqual(t, w.HeaderMap.Get(CORS_ALLOW_CREDENTIALS), "true")
+	exposeCan := http.CanonicalHeaderKey(CORS_EXPOSE_HEADERS)
+	if header, exists := w.HeaderMap[exposeCan]; exists {
+		t.Fatalf("Didn't expected expose headers header: %s", header)
+	}
+
+	m.SetCORS("http://test", "false", "FooBar BarFoo")
+	w = httptest.NewRecorder()
+	h.ServeHTTP(w, req)
+	assertEqual(t, w.HeaderMap.Get(CORS_ALLOW_ORIGIN), "http://test")
+	assertEqual(t, w.HeaderMap.Get(CORS_ALLOW_CREDENTIALS), "false")
+	assertEqual(t, w.HeaderMap.Get(CORS_EXPOSE_HEADERS), "FooBar BarFoo")
+}
+
 //////////////////////////////////////////////////////////////////////////////
 // Examples
 

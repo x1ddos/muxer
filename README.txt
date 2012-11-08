@@ -13,12 +13,18 @@ Simple muxer for a Go app.
     // v.Get("action")
   }
 
+  var m = muxer.NewMux("/api", nil)
+
   func init() {
-    m := muxer.NewMux("/api", nil)
     m.Add("GET", "users/{id}", handler1).As("profile")
     m.Add("GET", "products", handler2)
     m.Add("PUT", "products/{id}/do", handler3)
     m.Add("POST", "{domain}/{action}/{id}", handler4).As("whatever")
+
+    // Enable CORS support (optional)
+    m.SetCORS("*", "true", "")
   }
 
 See muxer_test.go for more.
+
+GoPkgDoc: http://go.pkgdoc.org/code.google.com/p/go-muxer
